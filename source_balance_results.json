@@ -1,0 +1,158 @@
+[
+  {
+    "question": "What are the rules for recruitment agencies?",
+    "confidence": 0.75,
+    "answer_summary": "Recruitment agencies, also known as Employment Agencies (EAs), must follow specific rules and regulations in Hong Kong:\n\n1.  **Licensing**:\n    *   An EA must possess a valid EA licence to operate. You cannot lend, transfer, or assign an EA licence to another person (Source 1, page 13; Source 10, pa",
+    "source_counts": {
+      "CoP_Eng.pdf": 10
+    },
+    "top_sources": [
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf"
+    ],
+    "cop_count": 10,
+    "cop_share": 1.0
+  },
+  {
+    "question": "What should an employment agency charge a job seeker?",
+    "confidence": 0.75,
+    "answer_summary": "An employment agency (EA) should only charge a job seeker the \"prescribed commission.\"\n\nHere are the details regarding the charge:\n*   **Maximum Amount**: The maximum commission that an EA may charge and receive from a job seeker is an amount not exceeding 10% of the first-month's wages received by ",
+    "source_counts": {
+      "CoP_Eng.pdf": 10
+    },
+    "top_sources": [
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf"
+    ],
+    "cop_count": 10,
+    "cop_share": 1.0
+  },
+  {
+    "question": "Can an employer keep a helper's passport?",
+    "confidence": 0.75,
+    "answer_summary": "No, your employer cannot keep your passport without your consent. You should keep your own personal identification documents (e.g., identity card, passport). No other person, including your employer or staff of the employment agency, should keep these documents for you without your consent.\n\nThis is",
+    "source_counts": {
+      "CoP_Eng.pdf": 9,
+      "FDHguideEnglish.pdf": 1
+    },
+    "top_sources": [
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf",
+      "CoP_Eng.pdf"
+    ],
+    "cop_count": 9,
+    "cop_share": 0.9
+  },
+  {
+    "question": "What are the rights of foreign domestic helpers in Hong Kong?",
+    "confidence": 0.75,
+    "answer_summary": "As a foreign domestic helper in Hong Kong, you have several rights:\n\n*   **Basic Rights and Responsibilities:** Your basic rights and responsibilities are specified in the standard employment contract (ID 407), and the Employment Ordinance is also applicable to you (FDHguideEnglish.pdf, page 4).\n*  ",
+    "source_counts": {
+      "FDHguideEnglish.pdf": 10
+    },
+    "top_sources": [
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf"
+    ],
+    "cop_count": 0,
+    "cop_share": 0.0
+  },
+  {
+    "question": "When should wages be paid to a domestic helper?",
+    "confidence": 0.75,
+    "answer_summary": "You should fix a date on which you will pay wages to your helper.\n\nThis is informational support, not legal advice.\nSource: FDHguideEnglish.pdf, page 5.",
+    "source_counts": {
+      "FDHguideEnglish.pdf": 10
+    },
+    "top_sources": [
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf"
+    ],
+    "cop_count": 0,
+    "cop_share": 0.0
+  },
+  {
+    "question": "What leave is a domestic helper entitled to?",
+    "confidence": 0.75,
+    "answer_summary": "Under the Employment Ordinance, foreign domestic helpers are entitled to the following types of leave:\n*   Rest days\n*   Statutory holidays\n*   Paid annual leave\n\nAdditionally, if both the employer and helper agree to renew the contract, the helper is entitled to a paid/unpaid vacation of not less t",
+    "source_counts": {
+      "FDHguideEnglish.pdf": 10
+    },
+    "top_sources": [
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf"
+    ],
+    "cop_count": 0,
+    "cop_share": 0.0
+  },
+  {
+    "question": "What happens if a helper is injured at work?",
+    "confidence": 0.75,
+    "answer_summary": "Yes, if a helper is injured at work, the Employees' Compensation Ordinance (ECO) applies, and there are specific requirements and entitlements:\n\n1.  **Applicability and Notification:**\n    *   The ECO applies to all employees in Hong Kong, including Foreign Domestic Helpers (FDHs), for injuries at w",
+    "source_counts": {
+      "ImportantInformationForEmployersAndEmployees_Eng.pdf": 5,
+      "Handy_Guide_for_Employers_of_FDHs_English_version_Web_version.pdf": 2,
+      "FDHguideEnglish.pdf": 3
+    },
+    "top_sources": [
+      "ImportantInformationForEmployersAndEmployees_Eng.pdf",
+      "ImportantInformationForEmployersAndEmployees_Eng.pdf",
+      "ImportantInformationForEmployersAndEmployees_Eng.pdf",
+      "ImportantInformationForEmployersAndEmployees_Eng.pdf",
+      "ImportantInformationForEmployersAndEmployees_Eng.pdf"
+    ],
+    "cop_count": 0,
+    "cop_share": 0.0
+  },
+  {
+    "question": "Can a foreign domestic helper work part-time for another employer?",
+    "confidence": 0.75,
+    "answer_summary": "No, a foreign domestic helper cannot take up part-time employment with another person.\n\nIt is an offence under the Immigration Ordinance for you to take up any employment with any person other than your employer named on your visa. If you breach these conditions of stay, you will be liable to prosec",
+    "source_counts": {
+      "FDHguideEnglish.pdf": 10
+    },
+    "top_sources": [
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf"
+    ],
+    "cop_count": 0,
+    "cop_share": 0.0
+  },
+  {
+    "question": "Can a foreign domestic helper live outside the employer's home?",
+    "confidence": 0.75,
+    "answer_summary": "No, a foreign domestic helper should work and reside in your employer\u2019s residence in accordance with Clause 3 of the standard employment contract. Your employer is required to provide you with free accommodation as per the standard specified in the \u201cSchedule of Accommodation and Domestic Duties\u201d of ",
+    "source_counts": {
+      "FDHguideEnglish.pdf": 10
+    },
+    "top_sources": [
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf",
+      "FDHguideEnglish.pdf"
+    ],
+    "cop_count": 0,
+    "cop_share": 0.0
+  }
+]
