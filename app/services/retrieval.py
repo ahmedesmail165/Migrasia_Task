@@ -7,6 +7,7 @@ from dataclasses import replace
 
 from app.services.embeddings import EmbeddingService
 from app.services.vector_store import SearchResult, VectorStore
+from app.utils.debug_session_log import debug_session_log
 
 # Lexical boost terms for passport / identification document questions.
 PASSPORT_LEXICAL_TERMS: tuple[str, ...] = (
@@ -780,6 +781,25 @@ def is_weak_display_source(result: SearchResult, question: str) -> bool:
     return evidence < 0.15
 
 
+def strip_answer_citations(answer: str) -> str:
+    """Remove inline source citations from model answer prose."""
+    text = re.sub(
+        r"\[Source\s+\d+[^\]]*\]\s*[\w\(\)\-\.]+\.pdf\s*\(pages?\s*\d+[^)]*\)",
+        "",
+        answer,
+    )
+    text = re.sub(r"\[Source\s+\d+[^\]]*\]", "", text)
+    patterns = [
+        r"\s*Sources?:\s*[\w\(\)\-\.]+\.pdf\s*\(pages?\s*\d+[^)]*\)",
+        r"\s*Sources?:\s*[\w\(\)\-\.]+\.pdf\s*,?\s*page\s*\d+",
+        r"\s*Sources?:\s*[\w\(\)\-\.]+\.pdf\s*$",
+        r"\s*\[Source\s+\d+[^\]]*\]",
+    ]
+    for pattern in patterns:
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
+    return text.strip()
+
+
 def _extract_answer_citations(answer: str) -> list[tuple[str, int | None]]:
     """Parse intentional source citations from model answer prose."""
     cleaned = re.sub(r"\[Source\s+\d+\][^\n]*", "", answer)
@@ -803,6 +823,42 @@ def _extract_answer_citations(answer: str) -> list[tuple[str, int | None]]:
             citations.append((source_file, None))
 
     return citations
+
+
+def _extract_bracket_source_refs(answer: str) -> list[tuple[int, int | None]]:
+    """Parse numbered context refs like [Source 7, page 6]."""
+    refs: list[tuple[int, int | None]] = []
+    for match in re.finditer(
+        r"\[Source\s+(\d+)(?:,\s*page\s*(\d+))?\]",
+        answer,
+        flags=re.IGNORECASE,
+    ):
+        page = int(match.group(2)) if match.group(2) else None
+        refs.append((int(match.group(1)), page))
+    return refs
+
+
+def _chunk_from_bracket_ref(
+    results: list[SearchResult],
+    source_index: int,
+    page: int | None,
+    exclude: set[str],
+) -> SearchResult | None:
+    """Map a 1-based [Source N] tag to the retrieval chunk shown in LLM context."""
+    if source_index < 1 or source_index > len(results):
+        return None
+    candidate = results[source_index - 1]
+    if candidate.chunk_id in exclude:
+        return None
+    if page is not None and not _chunk_matches_citation(candidate, candidate.source_file, page):
+        same_file = [
+            result
+            for result in results
+            if result.chunk_id not in exclude and result.source_file == candidate.source_file
+        ]
+        if same_file:
+            return max(same_file, key=lambda result: result.score)
+    return candidate
 
 
 def _apply_answer_citation_boosts(
@@ -844,6 +900,63 @@ def _chunk_matches_citation(
     return result.page_start <= page <= result.page_end
 
 
+def _best_chunk_for_citation(
+    results: list[SearchResult],
+    source_file: str,
+    page: int | None,
+    exclude: set[str],
+) -> SearchResult | None:
+    """Pick the best retrieval chunk for a citation parsed from the answer."""
+    matches = [
+        result
+        for result in results
+        if result.chunk_id not in exclude and _chunk_matches_citation(result, source_file, page)
+    ]
+    if matches:
+        return max(matches, key=lambda result: result.score)
+
+    same_file = [
+        result
+        for result in results
+        if result.chunk_id not in exclude and result.source_file == source_file
+    ]
+    if same_file:
+        return max(same_file, key=lambda result: result.score)
+    return None
+
+
+def _best_passport_evidence_chunk(
+    results: list[SearchResult],
+    question: str,
+    exclude: set[str],
+) -> SearchResult | None:
+    """Prefer FDH passport-policy chunks when answering passport questions."""
+    fdh_candidates = [
+        result
+        for result in results
+        if result.chunk_id not in exclude
+        and result.source_file == FDH_GUIDE_FILE
+        and _has_passport_retention_policy(result.text)
+    ]
+    if fdh_candidates:
+        return max(
+            fdh_candidates,
+            key=lambda result: chunk_direct_evidence_score(result, question),
+        )
+
+    policy_candidates = [
+        result
+        for result in results
+        if result.chunk_id not in exclude and _has_passport_retention_policy(result.text)
+    ]
+    if not policy_candidates:
+        return None
+    return max(
+        policy_candidates,
+        key=lambda result: chunk_direct_evidence_score(result, question),
+    )
+
+
 def select_display_sources(
     results: list[SearchResult],
     question: str,
@@ -853,11 +966,93 @@ def select_display_sources(
     """
     Choose citation sources from internal retrieval context.
 
-    Prioritizes direct-evidence chunks over raw hybrid rank. When an answer
-  is available, boosts chunks referenced in the model's prose.
+    Prioritizes chunks cited in the model answer, then direct-evidence chunks
+    over raw hybrid rank.
     """
     if not results or display_k <= 0:
         return []
+
+    selected: list[SearchResult] = []
+    seen: set[str] = set()
+
+    if is_passport_question(question):
+        passport_chunk = _best_passport_evidence_chunk(results, question, seen)
+        # region agent log
+        debug_session_log(
+            "F",
+            "retrieval.py:select_display_sources",
+            "passport_evidence_pick",
+            {
+                "matched": passport_chunk is not None,
+                "match_file": passport_chunk.source_file if passport_chunk else None,
+                "match_page": passport_chunk.page_start if passport_chunk else None,
+            },
+        )
+        # endregion
+        if passport_chunk:
+            selected.append(passport_chunk)
+            seen.add(passport_chunk.chunk_id)
+            if len(selected) >= display_k:
+                return selected
+
+    if answer:
+        citations = _extract_answer_citations(answer)
+        bracket_refs = _extract_bracket_source_refs(answer)
+        # region agent log
+        debug_session_log(
+            "C",
+            "retrieval.py:select_display_sources",
+            "citation_extraction",
+            {
+                "citations": [{"file": f, "page": p} for f, p in citations],
+                "bracket_refs": [{"index": i, "page": p} for i, p in bracket_refs],
+                "result_files": list({r.source_file for r in results}),
+                "display_k": display_k,
+            },
+        )
+        # endregion
+        for source_index, page in bracket_refs:
+            match = _chunk_from_bracket_ref(results, source_index, page, seen)
+            # region agent log
+            debug_session_log(
+                "E",
+                "retrieval.py:select_display_sources",
+                "bracket_match_attempt",
+                {
+                    "source_index": source_index,
+                    "cited_page": page,
+                    "matched": match is not None,
+                    "match_file": match.source_file if match else None,
+                    "match_page": match.page_start if match else None,
+                },
+            )
+            # endregion
+            if match:
+                selected.append(match)
+                seen.add(match.chunk_id)
+            if len(selected) >= display_k:
+                return selected
+        for source_file, page in citations:
+            match = _best_chunk_for_citation(results, source_file, page, seen)
+            # region agent log
+            debug_session_log(
+                "D",
+                "retrieval.py:select_display_sources",
+                "citation_match_attempt",
+                {
+                    "cited_file": source_file,
+                    "cited_page": page,
+                    "matched": match is not None,
+                    "match_file": match.source_file if match else None,
+                    "match_page": match.page_start if match else None,
+                },
+            )
+            # endregion
+            if match:
+                selected.append(match)
+                seen.add(match.chunk_id)
+            if len(selected) >= display_k:
+                return selected
 
     scored: list[tuple[float, SearchResult]] = [
         (chunk_direct_evidence_score(result, question), result) for result in results
@@ -868,21 +1063,24 @@ def select_display_sources(
 
     scored.sort(key=lambda item: (item[0], item[1].score), reverse=True)
 
-    selected: list[SearchResult] = []
-    seen: set[str] = set()
     for _, result in scored:
-        if is_weak_display_source(result, question):
-            continue
         if result.chunk_id in seen:
+            continue
+        if is_weak_display_source(result, question):
             continue
         seen.add(result.chunk_id)
         selected.append(result)
         if len(selected) >= display_k:
-            break
+            return selected
 
+    cited_files = {source_file for source_file, _ in _extract_answer_citations(answer or "")}
     if len(selected) < display_k:
         for _, result in scored:
             if result.chunk_id in seen:
+                continue
+            if cited_files and result.source_file not in cited_files:
+                continue
+            if is_weak_display_source(result, question):
                 continue
             seen.add(result.chunk_id)
             selected.append(result)

@@ -13,8 +13,10 @@ from app.services.retrieval import (
     hybrid_retrieve,
     select_display_sources,
     should_use_fallback,
+    strip_answer_citations,
 )
 from app.services.vector_store import SearchResult, VectorStore
+from app.utils.debug_session_log import debug_session_log
 from app.utils.logging import logger
 
 FALLBACK_ANSWER = (
@@ -34,7 +36,7 @@ Rules:
 4. For yes/no legal questions, start with a clear yes/no answer when supported, then explain the condition.
 5. Keep answers clear, practical, and supportive.
 6. For legal or regulatory questions, explain that this is informational support, not legal advice.
-7. Always cite the source file and page number when available.
+7. Do not include source file names or page numbers in your answer; sources are returned separately.
 8. If the user asks in Arabic, answer in Arabic.
 9. If the user asks in English, answer in English.
 10. If the user asks in Tagalog, answer in simple Tagalog if possible; otherwise answer in English and mention that multilingual support is limited.
@@ -147,16 +149,49 @@ class RAGService:
             return ChatResponse(answer=FALLBACK_ANSWER, sources=[], confidence=top_score)
 
         context = self._build_context(results)
-        answer = self._generate_answer(question, context)
+        raw_answer = self._generate_answer(question, context)
+        # region agent log
+        debug_session_log(
+            "A",
+            "rag_service.py:ask",
+            "raw_answer_generated",
+            {
+                "pipeline": "citation-v2",
+                "has_source_in_raw": "Source:" in raw_answer,
+                "raw_tail": raw_answer[-120:],
+                "retrieval_top3": [
+                    {"file": r.source_file, "p": r.page_start, "score": round(r.score, 4)}
+                    for r in results[:3]
+                ],
+                "display_k": display_k,
+            },
+        )
+        # endregion
         display_results = select_display_sources(
             results,
             question,
             display_k,
-            answer=answer,
+            answer=raw_answer,
         )
+        cleaned_answer = strip_answer_citations(raw_answer)
+        # region agent log
+        debug_session_log(
+            "B",
+            "rag_service.py:ask",
+            "response_built",
+            {
+                "has_source_in_cleaned": "Source:" in cleaned_answer,
+                "cleaned_tail": cleaned_answer[-120:],
+                "display_sources": [
+                    {"file": r.source_file, "p": r.page_start, "score": round(r.score, 4)}
+                    for r in display_results
+                ],
+            },
+        )
+        # endregion
 
         return ChatResponse(
-            answer=answer,
+            answer=cleaned_answer,
             sources=self._to_citations(display_results),
             confidence=round(top_score, 4),
         )
